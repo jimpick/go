@@ -5,7 +5,18 @@
 #include "go_asm.h"
 #include "textflag.h"
 
+// _rt0_wasm_wasi is not used itself. It only exists to mark the exported functions as alive.
 TEXT _rt0_wasm_wasi(SB),NOSPLIT,$0
+	I32Const $_rt0_wasm_wasi(SB)
+	Drop
+	I32Const $_rt0_wasm_wasix(SB)
+	Drop
+	I32Const $wasm_export_resume(SB)
+	Drop
+	I32Const $wasm_export_getsp(SB)
+	Drop
+
+TEXT _rt0_wasm_wasix(SB),NOSPLIT,$0
 	MOVD $runtime·wasmStack+m0Stack__size(SB), SP
 
 	I32Const $0 // entry PC_B
@@ -49,6 +60,20 @@ TEXT wasm_pc_f_loop(SB),NOSPLIT,$0
 	I32Const $0
 	Set PAUSE
 
+	Return
+
+// wasm_export_resume gets called from JavaScript. It resumes the execution of Go code until it needs to wait for
+// an event.
+TEXT wasm_export_resume(SB),NOSPLIT,$0
+	Call wasm_pc_f_loop(SB)
+
+	Return
+
+// wasm_export_getsp gets called from JavaScript to retrieve the SP.
+TEXT wasm_export_getsp(SB),NOSPLIT,$0
+	Get SP
+	I32Const $8
+	I32Sub
 	Return
 
 TEXT wasm_export_lib(SB),NOSPLIT,$0

@@ -2062,6 +2062,9 @@ func (ctxt *Link) textaddress() {
 	sect.Vaddr = va
 	ntramps := 0
 	for _, s := range ctxt.Textp {
+		if strings.HasPrefix(s.Name, "_rt0_w") || strings.HasPrefix(s.Name, "wasm_export") {
+			fmt.Printf("Jim ld Textp symbol %v\n", s.Name) // Missing syms
+		}
 		sect, n, va = assignAddress(ctxt, sect, n, s, va, false)
 
 		trampoline(ctxt, s) // resolve jumps, may add trampolines if jump too far

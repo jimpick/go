@@ -30,6 +30,11 @@
 
 package sym
 
+import (
+	"fmt"
+	"runtime/debug"
+)
+
 type Symbols struct {
 	symbolBatch []Symbol
 
@@ -61,6 +66,10 @@ func (syms *Symbols) Newsym(name string, v int) *Symbol {
 
 	s.Dynid = -1
 	s.Name = name
+	if name == "_rt0_wasm_wasi" || name == "_rt0_wasm_wasix" {
+		fmt.Printf("Jim syms.Newsym %v\n", name)
+		debug.PrintStack()
+	}
 	s.Version = int16(v)
 	syms.Allsym = append(syms.Allsym, s)
 
@@ -91,10 +100,17 @@ func (syms *Symbols) Add(s *Symbol) {
 	name := s.Name
 	v := int(s.Version)
 	m := syms.hash[v]
+	// fmt.Printf("Jim syms.Add %v\n", s.Name)
 	if _, ok := m[name]; ok {
 		panic(name + " already added")
 	}
 	m[name] = s
+}
+
+func (syms *Symbols) Dump() {
+	for _, s := range syms.Allsym {
+		fmt.Printf("Jim dump %v Version: %v Value: %v\n", s.Name, s.Version, s.Value)
+	}
 }
 
 // Allocate a new version (i.e. symbol namespace).

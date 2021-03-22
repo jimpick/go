@@ -1064,6 +1064,7 @@ func loadObjFull(l *Loader, r *oReader) {
 		if s == nil {
 			continue
 		}
+		// fmt.Printf("Jim loader symbol %v\n", s.Name) not used?
 		if s.Name != name { // Sanity check. We can remove it in the final version.
 			fmt.Println("name mismatch:", lib, i, s.Name, name)
 			panic("name mismatch")

@@ -10,8 +10,10 @@ import (
 	"cmd/internal/objabi"
 	"cmd/link/internal/ld"
 	"cmd/link/internal/sym"
+	"fmt"
 	"io"
 	"regexp"
+	"runtime/debug"
 )
 
 const (
@@ -55,7 +57,9 @@ type wasmFuncType struct {
 }
 
 var wasmFuncTypes = map[string]*wasmFuncType{
+	"_rt0_wasm_js":           {Params: []byte{}},                                         //
 	"_rt0_wasm_wasi":         {Params: []byte{}},                                         //
+	"_rt0_wasm_wasix":        {Params: []byte{}},                                         //
 	"wasm_export__start":     {},                                                         //
 	"wasm_export_run":        {Params: []byte{I32, I32}},                                 // argc, argv
 	"wasm_export_resume":     {Params: []byte{}},                                         //
@@ -90,6 +94,10 @@ func assignAddress(ctxt *ld.Link, sect *sym.Section, n int, s *sym.Symbol, va ui
 	// PC_B the resume point inside of that function. The entry of the function has PC_B = 0.
 	s.Sect = sect
 	s.Value = int64(funcValueOffset+va/ld.MINFUNC) << 16 // va starts at zero
+	fmt.Printf("Jim wasm/asm assignAddress %v %v\n", s.Name, s.Value)
+	if s.Name == "_rt0_wasm_wasi" {
+		debug.PrintStack()
+	}
 	va += uint64(ld.MINFUNC)
 	return sect, n, va
 }
@@ -349,16 +357,50 @@ func writeGlobalSec(ctxt *ld.Link) {
 func writeExportSec(ctxt *ld.Link, lenHostImports int) {
 	sizeOffset := writeSecHeader(ctxt, sectionExport)
 
-	writeUleb128(ctxt.Out, 2) // number of exports
+	writeUleb128(ctxt.Out, 6) // number of exports
 
+	ctxt.Syms.Dump()
+	fmt.Printf("Jim lenHostImports %v\n", uint32(lenHostImports))
+	fmt.Printf("Jim _rt0_wasm_wasi %v\n", uint32(ctxt.Syms.ROLookup("_rt0_wasm_wasi", 0).Value>>16))
+	fmt.Printf("Jim funcValueOffset %v\n", funcValueOffset)
 	idx := uint32(lenHostImports) + uint32(ctxt.Syms.ROLookup("_rt0_wasm_wasi", 0).Value>>16) - funcValueOffset
-	writeName(ctxt.Out, "_start")       // inst.exports.run/resume/getsp in wasm_exec.js
+	writeName(ctxt.Out, "_start2")
 	ctxt.Out.WriteByte(0x00)            // func export
 	writeUleb128(ctxt.Out, uint64(idx)) // funcidx
+	fmt.Printf("Jim1 _start2 %v\n", uint64(idx))
+
+	fmt.Printf("Jim lenHostImports %v\n", uint32(lenHostImports))
+	fmt.Printf("Jim _rt0_wasm_wasix %v\n", uint32(ctxt.Syms.ROLookup("_rt0_wasm_wasix", 0).Value>>16))
+	fmt.Printf("Jim funcValueOffset %v\n", funcValueOffset)
+	idx = uint32(lenHostImports) + uint32(ctxt.Syms.ROLookup("_rt0_wasm_wasix", 0).Value>>16) - funcValueOffset
+	writeName(ctxt.Out, "_start")
+	ctxt.Out.WriteByte(0x00)            // func export
+	writeUleb128(ctxt.Out, uint64(idx)) // funcidx
+	fmt.Printf("Jim1 _start %v\n", uint64(idx))
+
+	fmt.Printf("Jim3 wasm_export_resume %v\n", uint32(ctxt.Syms.ROLookup("wasm_export_resume", 0).Value>>16))
+	writeName(ctxt.Out, "resume") // inst.exports.resume in wasm_exec.js
+	ctxt.Out.WriteByte(0x00)      // func export
+	idx = uint32(lenHostImports) + uint32(ctxt.Syms.ROLookup("wasm_export_resume", 0).Value>>16) - funcValueOffset
+	// idx += 2
+	writeUleb128(ctxt.Out, uint64(idx)) // idx
+	fmt.Printf("Jim3 resume %v\n", uint64(idx))
+
+	fmt.Printf("Jim4 wasm_export_getsp %v\n", uint32(ctxt.Syms.ROLookup("wasm_export_getsp", 0).Value>>16))
+	writeName(ctxt.Out, "getsp") // inst.exports.getsp in wasm_exec.js
+	ctxt.Out.WriteByte(0x00)     // func export
+	idx = uint32(lenHostImports) + uint32(ctxt.Syms.ROLookup("wasm_export_getsp", 0).Value>>16) - funcValueOffset
+	// idx++
+	writeUleb128(ctxt.Out, uint64(idx)) // idx
+	fmt.Printf("Jim4 getsp %v\n", uint64(idx))
 
 	writeName(ctxt.Out, "memory") // inst.exports.mem in wasm_exec.js
 	ctxt.Out.WriteByte(0x02)      // mem export
 	writeUleb128(ctxt.Out, 0)     // memidx
+
+	writeName(ctxt.Out, "mem") // inst.exports.mem in wasm_exec.js
+	ctxt.Out.WriteByte(0x02)   // mem export
+	writeUleb128(ctxt.Out, 0)  // memidx
 
 	writeSecSize(ctxt, sizeOffset)
 }

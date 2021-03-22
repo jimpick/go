@@ -130,6 +130,10 @@ func addToTextp(ctxt *Link) {
 	// Remove dead text but keep file information (z symbols).
 	textp := []*sym.Symbol{}
 	for _, s := range ctxt.Textp {
+		// Doesn't seem to be called
+		if strings.HasPrefix(s.Name, "_rt0_w") || strings.HasPrefix(s.Name, "wasm_export") {
+			fmt.Printf("Jim deadcode 1 %s\n", s.Name, s.Attr.Reachable())
+		}
 		if s.Attr.Reachable() {
 			textp = append(textp, s)
 		}
@@ -146,6 +150,9 @@ func addToTextp(ctxt *Link) {
 			}
 			libtextp := lib.Textp[:0]
 			for _, s := range lib.Textp {
+				if strings.HasPrefix(s.Name, "_rt0_w") || strings.HasPrefix(s.Name, "wasm_export") {
+					fmt.Printf("Jim deadcode 2 %s reachable: %s unit: %s\n", s.Name, s.Attr.Reachable(), s.Unit != nil)
+				}
 				if s.Attr.Reachable() {
 					textp = append(textp, s)
 					libtextp = append(libtextp, s)
@@ -155,6 +162,9 @@ func addToTextp(ctxt *Link) {
 				}
 			}
 			for _, s := range lib.DupTextSyms {
+				if strings.HasPrefix(s.Name, "_rt0_w") || strings.HasPrefix(s.Name, "wasm_export") {
+					fmt.Printf("Jim deadcode 3 %s\n", s.Name, s.Attr.Reachable())
+				}
 				if s.Attr.Reachable() && !s.Attr.OnList() {
 					textp = append(textp, s)
 					libtextp = append(libtextp, s)
@@ -181,6 +191,9 @@ func addToTextp(ctxt *Link) {
 		// pcln table entries for these any more so remove them from Textp.
 		textp := make([]*sym.Symbol, 0, len(ctxt.Textp))
 		for _, s := range ctxt.Textp {
+			if strings.HasPrefix(s.Name, "_rt0") || strings.HasPrefix(s.Name, "wasm_export") {
+				fmt.Printf("Jim deadcode 4 %s\n", s.Name)
+			}
 			if s.Type != sym.SDYNIMPORT {
 				textp = append(textp, s)
 			}
