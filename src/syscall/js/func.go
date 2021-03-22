@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// +build js,wasm
+// +build js,wasm wasi
 
 package js
 
@@ -63,12 +63,12 @@ func (c Func) Release() {
 	funcsMu.Unlock()
 }
 
-//go:linkname setEventHandler runtime.setEventHandler
-func setEventHandler(fn func())
+//xgo:linkname setEventHandler runtime.setEventHandler
+//func setEventHandler(fn func())
 
-func init() {
-	setEventHandler(handleEvent)
-}
+//func init() {
+//	setEventHandler(handleEvent)
+//}
 
 func handleEvent() {
 	cb := jsGo.Get("_pendingEvent")

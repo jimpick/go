@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// +build js,wasm
+// +build js,wasm wasi
 
 package runtime
 
@@ -242,6 +242,8 @@ func handleEvent() {
 var eventHandler func()
 
 // setEventHandler is used by the syscall/js package.
+
+//go:wasmimport setEventHandler go runtime.setEventHandler abi0
 func setEventHandler(fn func()) {
 	eventHandler = fn
 }
