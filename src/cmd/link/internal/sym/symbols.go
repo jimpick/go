@@ -108,9 +108,11 @@ func (syms *Symbols) Add(s *Symbol) {
 }
 
 func (syms *Symbols) Dump() {
+	/*
 	for _, s := range syms.Allsym {
 		fmt.Printf("Jim dump %v Version: %v Value: %v\n", s.Name, s.Version, s.Value)
 	}
+	*/
 }
 
 // Allocate a new version (i.e. symbol namespace).

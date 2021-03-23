@@ -26,6 +26,16 @@ TEXT _rt0_wasm_wasix(SB),NOSPLIT,$0
 
 	Return
 
+// wasm_export_resume gets called from JavaScript. It resumes the execution of Go code until it needs to wait for
+// an event.
+TEXT wasm_export_resume(SB),NOSPLIT,$0
+	// I32Const $0
+	// Call runtime·handleEvent(SB)
+	// Drop
+	Call wasm_pc_f_loop(SB)
+
+	Return
+
 TEXT wasm_pc_f_loop(SB),NOSPLIT,$0
 // Call the function for the current PC_F. Repeat until PAUSE != 0 indicates pause or exit.
 // The WebAssembly stack may unwind, e.g. when switching goroutines.
@@ -62,19 +72,18 @@ TEXT wasm_pc_f_loop(SB),NOSPLIT,$0
 
 	Return
 
-// wasm_export_resume gets called from JavaScript. It resumes the execution of Go code until it needs to wait for
-// an event.
-TEXT wasm_export_resume(SB),NOSPLIT,$0
-	Call wasm_pc_f_loop(SB)
-
-	Return
-
 // wasm_export_getsp gets called from JavaScript to retrieve the SP.
 TEXT wasm_export_getsp(SB),NOSPLIT,$0
 	Get SP
-	I32Const $8
-	I32Sub
+	// I32Const $8
+	// I32Sub
 	Return
+
+TEXT runtime·pause(SB), NOSPLIT, $0-8
+	MOVD newsp+0(FP), SP
+	I32Const $1
+	Set PAUSE
+	RETUNWIND
 
 TEXT wasm_export_lib(SB),NOSPLIT,$0
 	UNDEF
